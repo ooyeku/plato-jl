@@ -8,6 +8,11 @@ include("plato/sqlite_helper.jl")
 include("plato/query_builder.jl")
 include("plato/qual.jl")
 include("plato/quant.jl")
+include("plato/visualization.jl")
+include("plato/clean.jl")
+include("plato/ml.jl")
+include("plato/report.jl")
+include("plato/project.jl")
 
 using .FileIO
 using .RUtils
@@ -17,16 +22,46 @@ using .SQLiteHelper
 using .QueryBuilder: Query
 using .Qual
 using .Quant
+using .Visualization
+using .DataCleaning
+using .MachineLearning
 using Statistics
 using .QueryBuilder: Query, from, select, where, limit, order_by, or_, and_, build
 using BenchmarkTools
+using .Report
+using .Project
+using Plots: plot, savefig
 
-export DataGen, DataFrameUtils, FileIO, RUtils, SQLiteHelper, QueryBuilder, Qual, Quant
+export DataGen, DataFrameUtils, FileIO, RUtils, SQLiteHelper, QueryBuilder, Qual, Quant, Visualization, DataCleaning, MachineLearning, Report, Project
+
+function show_environment()
+    for name in names(Main)
+        if name != :show_environment
+            println("$name: $(getfield(Main, name))")
+        end
+    end
+end
+
+function show_packages()
+    for name in names(Main)
+        if name != :show_packages
+            println("$name: $(getfield(Main, name))")
+        end
+    end
+end
+
+function show_memory_usage()
+    println("Memory usage: $(round(Sys.total_memory() - Sys.free_memory(), digits=2)) MB")
+end
 
 # Example of a higher-level function that uses multiple modules
 function example_high_level_function()
     @btime begin
     println("Example high-level function using multiple modules")
+
+    # Create a new project
+    project = Project.create_project("example_project")
+    println("Project created at: $(Project.get_project_path(project))")
 
     # Generate some data
     gen = DataGen.create_data_generator(1_000)
@@ -35,17 +70,15 @@ function example_high_level_function()
     df = DataGen.generate(gen)
     println("Generated DataFrame:\n$df")
 
-    # Save the data to a CSV file
-    FileIO.save(df, "example_data.csv")
-    println("Data saved to example_data.csv")
+    # Save the data to a CSV file within the project directory
+    Project.save_project_file(project, df, "example_data.csv")
 
-    # Load the data back
-    loaded_df = FileIO.load("example_data.csv")
+    # Load the data back from the project directory
+    loaded_df = Project.load_project_file(project, "example_data.csv")
     println("Loaded DataFrame:\n$loaded_df")
 
     # Ensure the DateColumn exists before manipulating it
     if "DateColumn" in names(loaded_df)
-        # Perform some data manipulation
         df = DataFrameUtils.make_date(loaded_df, "DateColumn", "yyyy-mm-dd")
         df = DataFrameUtils.dayofweek(df, "DateColumn")
         println("DataFrame with date manipulation:\n$df")
@@ -61,8 +94,8 @@ function example_high_level_function()
     text_summary = Qual.text_summary(df, :Text)
     println("Text summary:\n$text_summary")
 
-    # Build and execute a SQL query
-    db = SQLiteHelper.create_database("example.db")
+    # Create a database within the project directory
+    db = Project.create_project_database(project, "example.db")
     SQLiteHelper.create_table(db, "people", Dict("id" => "INTEGER PRIMARY KEY", "name" => "TEXT", "age" => "INTEGER"))
     query = Query()
     queries = [
@@ -91,8 +124,20 @@ function example_high_level_function()
     println("SQL query result:\n$result")
     # Clean up
     SQLiteHelper.DBInterface.close!(db)
-        SQLiteHelper.delete_db_file("example.db")
-        println("Database connection closed and file deleted.")
+    SQLiteHelper.delete_db_file(joinpath(Project.get_project_path(project), "example.db"))
+    println("Database connection closed and file deleted.")
+
+    # Generate a report within the project directory
+    report = Report.create_report_generator()
+    Report.add_note!(report, "Generated data and performed analysis.")
+    Report.add_analysis!(report, "Descriptive statistics:\n$stats")
+    Report.add_analysis!(report, "Text summary:\n$text_summary")
+    plot_path = joinpath(Project.get_project_path(project), "example_plot.png")
+    plot(df.age, title="Age Distribution", xlabel="Index", ylabel="Age")
+    savefig(plot_path)
+    Report.add_plot!(report, plot_path)
+    Project.generate_project_report(project, report, :html)
+    Project.generate_project_report(project, report, :markdown)
     end
 end
 

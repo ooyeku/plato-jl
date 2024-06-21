@@ -10,8 +10,8 @@ mutable struct Query
     from_clause::String
     where_clause::Vector{String}
     order_by_clause::Vector{String}
-    limit_clause::Union{Int,Nothing}
-    offset_clause::Union{Int,Nothing}
+    limit_value::Union{Int,Nothing}
+    offset_value::Union{Int,Nothing}
     insert_clause::String
     values_clause::Vector{String}
 end
@@ -49,12 +49,12 @@ function order_by(q::Query, columns...)
 end
 
 function limit(q::Query, n::Int)
-    q.limit_clause = n
+    q.limit_value = n
     q
 end
 
 function offset(q::Query, n::Int)
-    q.offset_clause = n
+    q.offset_value = n
     q
 end
 
@@ -80,8 +80,8 @@ function build(q::Query)
     
     !isempty(q.where_clause) && push!(components, "WHERE $(join(q.where_clause, " "))")
     !isempty(q.order_by_clause) && push!(components, "ORDER BY $(join(q.order_by_clause, ", "))")
-    !isnothing(q.limit_clause) && push!(components, "LIMIT $(q.limit_clause)")
-    !isnothing(q.offset_clause) && push!(components, "OFFSET $(q.offset_clause)")
+    !isnothing(q.limit_value) && push!(components, "LIMIT $(q.limit_value)")
+    !isnothing(q.offset_value) && push!(components, "OFFSET $(q.offset_value)")
     
     join(components, " ")
 end
