@@ -51,7 +51,8 @@ function show_packages()
 end
 
 function show_memory_usage()
-    println("Memory usage: $(round(Sys.total_memory() - Sys.free_memory(), digits=2)) MB")
+    used_memory = Sys.total_memory() - Sys.free_memory()
+    println("Memory usage: $(round(used_memory / (1024^2), digits=2)) MB")
 end
 
 # Example of a higher-level function that uses multiple modules
