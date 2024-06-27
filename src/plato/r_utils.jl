@@ -6,12 +6,13 @@ using Pkg
 function ensure_packages_installed()
     packages = ["RCall", "StatsBase", "DataFrames", "CSV"]
     for pkg in packages
-        if !haskey(Pkg.dependencies(), pkg)
+        if !haskey(Pkg.project().dependencies, pkg)
             Pkg.add(pkg)
         end
     end
 end
 
+ensure_packages_installed()
 
 using RCall, StatsBase, DataFrames, CSV
 
